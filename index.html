@@ -1,0 +1,199 @@
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CI Capital Car Auction</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-6">
+
+<div class="max-w-6xl mx-auto">
+
+<h1 class="text-3xl font-bold text-center mb-8">
+CI Capital Car Auction
+</h1>
+
+<!-- ADMIN SECTION -->
+<div class="bg-white p-6 rounded-xl shadow mb-8">
+    <h2 class="text-lg font-semibold mb-4">Admin Upload</h2>
+
+    <input id="adminCode" type="password" placeholder="Enter Admin Code" class="border p-2 rounded w-full mb-3">
+
+    <button onclick="unlockAdmin()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">
+        Unlock Admin
+    </button>
+
+    <div id="adminPanel" class="hidden mt-6">
+        <input id="carTitle" placeholder="Car Title" class="border p-2 rounded w-full mb-2">
+
+        <input id="startingPrice" type="number" placeholder="Starting Price (EGP)" class="border p-2 rounded w-full mb-2">
+
+        <textarea id="description" placeholder="Description" class="border p-2 rounded w-full mb-2"></textarea>
+
+        <input id="imageUrl" placeholder="Image URL (use Imgur or similar)" class="border p-2 rounded w-full mb-2">
+
+        <button onclick="uploadCar()" class="bg-green-600 text-white px-4 py-2 rounded w-full">
+            Upload Car
+        </button>
+    </div>
+</div>
+
+<div id="cars" class="grid md:grid-cols-2 gap-6"></div>
+
+</div>
+
+<script type="module">
+
+/* FIREBASE IMPORTS */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    onSnapshot,
+    updateDoc,
+    doc,
+    getDoc
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+/* YOUR FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "AIzaSyCMXAlQ9FVS76OvXZZdAdllp_h1EhWx_Pw",
+  authDomain: "ci-capital-cars.firebaseapp.com",
+  projectId: "ci-capital-cars",
+  storageBucket: "ci-capital-cars.firebasestorage.app",
+  messagingSenderId: "191123263324",
+  appId: "1:191123263324:web:97426e890e511eba3e7b99"
+};
+
+/* INITIALIZE FIREBASE */
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+/* ADMIN PASSWORD */
+const ADMIN_PASSWORD = "ADMIN123";
+
+/* ADMIN UNLOCK */
+window.unlockAdmin = function() {
+    const entered = document.getElementById("adminCode").value;
+
+    if (entered === ADMIN_PASSWORD) {
+        document.getElementById("adminPanel").classList.remove("hidden");
+    } else {
+        alert("Incorrect admin code");
+    }
+};
+
+/* UPLOAD CAR */
+window.uploadCar = async function() {
+
+    const title = document.getElementById("carTitle").value;
+    const price = document.getElementById("startingPrice").value;
+    const desc = document.getElementById("description").value;
+    const img = document.getElementById("imageUrl").value;
+
+    if (!title || !price || !desc || !img) {
+        alert("Fill all fields");
+        return;
+    }
+
+    await addDoc(collection(db, "cars"), {
+        title: title,
+        description: desc,
+        image: img,
+        highestBid: Number(price),
+        bids: []
+    });
+
+    alert("Car uploaded successfully");
+
+    document.getElementById("carTitle").value = "";
+    document.getElementById("startingPrice").value = "";
+    document.getElementById("description").value = "";
+    document.getElementById("imageUrl").value = "";
+};
+
+/* PLACE BID */
+window.placeBid = async function(id) {
+
+    const name = document.getElementById(`name-${id}`).value;
+    const emp = document.getElementById(`emp-${id}`).value;
+    const bidAmount = Number(document.getElementById(`bid-${id}`).value);
+
+    if (!name || !emp || !bidAmount) {
+        alert("Fill all fields");
+        return;
+    }
+
+    const carRef = doc(db, "cars", id);
+    const snap = await getDoc(carRef);
+    const data = snap.data();
+
+    if (bidAmount <= data.highestBid) {
+        alert("Bid must be higher than current highest bid.");
+        return;
+    }
+
+    const updatedBids = [
+        ...data.bids,
+        {
+            name,
+            emp,
+            amount: bidAmount,
+            time: new Date().toLocaleString()
+        }
+    ];
+
+    await updateDoc(carRef, {
+        highestBid: bidAmount,
+        bids: updatedBids
+    });
+
+    alert("Bid submitted successfully");
+};
+
+/* REAL-TIME LISTENER */
+onSnapshot(collection(db, "cars"), (snapshot) => {
+
+    const container = document.getElementById("cars");
+    container.innerHTML = "";
+
+    snapshot.forEach((docSnap) => {
+
+        const car = docSnap.data();
+        const id = docSnap.id;
+
+        container.innerHTML += `
+        <div class="bg-white p-4 rounded-xl shadow">
+            <img src="${car.image}" class="w-full h-56 object-cover rounded mb-4">
+            <h3 class="text-xl font-bold">${car.title}</h3>
+            <p class="text-gray-600 mb-2">${car.description}</p>
+            <p class="text-green-600 font-semibold mb-4">
+                Highest Bid: EGP ${car.highestBid.toLocaleString()}
+            </p>
+
+            <input id="name-${id}" placeholder="Your Name"
+                class="border p-2 rounded w-full mb-2">
+
+            <input id="emp-${id}" placeholder="Employee ID"
+                class="border p-2 rounded w-full mb-2">
+
+            <input id="bid-${id}" type="number"
+                placeholder="Your Bid (EGP)"
+                class="border p-2 rounded w-full mb-2">
+
+            <button onclick="placeBid('${id}')"
+                class="bg-blue-600 text-white px-4 py-2 rounded w-full">
+                Submit Bid
+            </button>
+        </div>
+        `;
+    });
+
+});
+
+</script>
+
+
+
+</body></html>
