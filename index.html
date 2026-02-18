@@ -110,9 +110,9 @@ window.unlockAdmin = function() {
     const entered = document.getElementById("adminCode").value;
 
     if (entered === ADMIN_PASSWORD) {
-        isAdmin = true; // ✅ set admin mode
+        isAdmin = true; // 
         document.getElementById("adminPanel").classList.remove("hidden");
-        renderCars(); // ✅ force buttons to appear immediately
+        renderCars(); // 
     } else {
         alert("Incorrect admin code");
     }
@@ -310,7 +310,6 @@ function renderCars() {
         Highest Bid: EGP ${car.highestBid.toLocaleString()}
     </p>
 
-    <!-- BIDDING FORM -->
     <div class="border-t pt-4 mt-4">
 
         <input id="name-${id}" 
@@ -335,6 +334,26 @@ function renderCars() {
 
 </div>
 `;
+
+        // ✅ ✅ ADMIN BID LIST
+        if (isAdmin && car.bids && car.bids.length > 0) {
+
+            adminContainer.innerHTML += `
+<div class="border rounded p-4 mb-4 bg-gray-50">
+    <h3 class="font-semibold mb-2">${car.title}</h3>
+    ${car.bids
+        .sort((a, b) => b.amount - a.amount)
+        .map(bid => `
+        <div class="border-b py-2 text-sm">
+            <div><strong>Name:</strong> ${bid.name}</div>
+            <div><strong>Employee ID:</strong> ${bid.emp}</div>
+            <div><strong>Bid:</strong> EGP ${bid.amount.toLocaleString()}</div>
+            <div class="text-gray-500">${bid.time}</div>
+        </div>
+    `).join("")}
+</div>
+`;
+        }
     });
 }
 
