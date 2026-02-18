@@ -182,8 +182,12 @@ window.deleteCar = async function(id) {
     if (newTitle === null) return;
 
     const newPrice = prompt("Edit starting price:", car.highestBid);
-    if (newPrice === null) return;
+if (newPrice === null) return;
 
+if (isNaN(Number(newPrice)) || Number(newPrice) <= 0) {
+    alert("Invalid price");
+    return;
+}
     const newDesc = prompt("Edit description:", car.description);
     if (newDesc === null) return;
 
@@ -267,7 +271,7 @@ onSnapshot(collection(db, "cars"), (snapshot) => {
         });
     });
 
-    renderCars(); // ✅ re-render every time snapshot updates
+    renderCars(); // 
 });
 function renderCars() {
 
@@ -305,6 +309,29 @@ function renderCars() {
     <p class="text-green-600 font-semibold mb-4">
         Highest Bid: EGP ${car.highestBid.toLocaleString()}
     </p>
+
+    <!-- BIDDING FORM -->
+    <div class="border-t pt-4 mt-4">
+
+        <input id="name-${id}" 
+            placeholder="Your Name (Required)"
+            class="border p-2 rounded w-full mb-2">
+
+        <input id="emp-${id}" 
+            placeholder="Employee ID (Required)"
+            class="border p-2 rounded w-full mb-2">
+
+        <input id="bid-${id}" 
+            type="number"
+            placeholder="Your Bid (Must exceed highest bid)"
+            class="border p-2 rounded w-full mb-2">
+
+        <button onclick="placeBid('${id}')"
+            class="bg-blue-600 text-white px-4 py-2 rounded w-full">
+            Place Bid
+        </button>
+
+    </div>
 
 </div>
 `;
