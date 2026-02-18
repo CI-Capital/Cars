@@ -170,6 +170,8 @@ window.deleteCar = async function(id) {
 
     window.editCar = async function(id) {
 
+    console.log("Edit clicked");
+
     const carRef = doc(db, "cars", id);
     const snap = await getDoc(carRef);
 
@@ -180,16 +182,22 @@ window.deleteCar = async function(id) {
 
     const car = snap.data();
 
+    console.log("Car loaded:", car);
+
     const newTitle = prompt("Edit title:", car.title);
+    console.log("Title entered:", newTitle);
     if (newTitle === null) return;
 
     const newDesc = prompt("Edit description:", car.description);
+    console.log("Description entered:", newDesc);
     if (newDesc === null) return;
 
     const newImage = prompt("Edit image URL:", car.image);
+    console.log("Image entered:", newImage);
     if (newImage === null) return;
 
     const newStartingPrice = prompt("Edit starting price:", car.startingPrice);
+    console.log("Price entered:", newStartingPrice);
     if (newStartingPrice === null) return;
 
     if (isNaN(Number(newStartingPrice)) || Number(newStartingPrice) <= 0) {
@@ -197,20 +205,14 @@ window.deleteCar = async function(id) {
         return;
     }
 
-    try {
-        await updateDoc(carRef, {
-            title: newTitle,
-            description: newDesc,
-            image: newImage,
-            startingPrice: Number(newStartingPrice)
-        });
+    await updateDoc(carRef, {
+        title: newTitle,
+        description: newDesc,
+        image: newImage,
+        startingPrice: Number(newStartingPrice)
+    });
 
-        alert("Car updated successfully");
-
-    } catch (error) {
-        console.error(error);
-        alert("Error updating car");
-    }
+    alert("Car updated successfully");
 };
 
 
