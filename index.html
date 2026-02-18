@@ -209,30 +209,46 @@ onSnapshot(collection(db, "cars"), (snapshot) => {
 
         /* USER VIEW */
         container.innerHTML += `
-        <div class="bg-white p-4 rounded-xl shadow">
-            <img src="${car.image}" class="w-full h-56 object-cover rounded mb-4">
-            <h3 class="text-xl font-bold">${car.title}</h3>
-            <p class="text-gray-600 mb-2">${car.description}</p>
-            <p class="text-green-600 font-semibold mb-4">
-                Highest Bid: EGP ${car.highestBid.toLocaleString()}
-            </p>
+<div class="bg-white p-4 rounded-xl shadow relative">
 
-            <input id="name-${id}" placeholder="Your Name"
-                class="border p-2 rounded w-full mb-2">
-
-            <input id="emp-${id}" placeholder="Employee ID"
-                class="border p-2 rounded w-full mb-2">
-
-            <input id="bid-${id}" type="number"
-                placeholder="Your Bid (EGP)"
-                class="border p-2 rounded w-full mb-2">
-
-            <button onclick="placeBid('${id}')"
-                class="bg-blue-600 text-white px-4 py-2 rounded w-full">
-                Submit Bid
+    ${!document.getElementById("adminPanel").classList.contains("hidden") ? `
+        <div class="absolute top-2 right-2 flex gap-2">
+            <button onclick="editCar('${id}')"
+                class="bg-yellow-500 text-white px-2 py-1 text-xs rounded">
+                Edit
+            </button>
+            <button onclick="deleteCar('${id}')"
+                class="bg-red-600 text-white px-2 py-1 text-xs rounded">
+                Delete
             </button>
         </div>
-        `;
+    ` : ""}
+
+    <img src="${car.image}" class="w-full h-56 object-cover rounded mb-4">
+
+    <h3 class="text-xl font-bold">${car.title}</h3>
+    <p class="text-gray-600 mb-2">${car.description}</p>
+
+    <p class="text-green-600 font-semibold mb-4">
+        Highest Bid: EGP ${car.highestBid.toLocaleString()}
+    </p>
+
+    <input id="name-${id}" placeholder="Your Name"
+        class="border p-2 rounded w-full mb-2">
+
+    <input id="emp-${id}" placeholder="Employee ID"
+        class="border p-2 rounded w-full mb-2">
+
+    <input id="bid-${id}" type="number"
+        placeholder="Your Bid (EGP)"
+        class="border p-2 rounded w-full mb-2">
+
+    <button onclick="placeBid('${id}')"
+        class="bg-blue-600 text-white px-4 py-2 rounded w-full">
+        Submit Bid
+    </button>
+</div>
+`;
 
         /* ADMIN VIEW */
         if (adminContainer && car.bids && car.bids.length > 0) {
