@@ -9,39 +9,67 @@
 
 <div class="max-w-6xl mx-auto">
 
-<h1 class="text-3xl font-bold text-center mb-8">
-CI Capital Car Auction
-</h1>
+    <h1 class="text-3xl font-bold text-center mb-8">
+        CI Capital Car Auction
+    </h1>
 
-<!-- ADMIN SECTION -->
-<div class="bg-white p-6 rounded-xl shadow mb-8">
-    <h2 class="text-lg font-semibold mb-4">Admin Upload</h2>
+    <!-- CARS DISPLAY FIRST -->
+    <div id="cars" class="grid md:grid-cols-2 gap-6 mb-16"></div>
 
-    <input id="adminCode" type="password" placeholder="Enter Admin Code" class="border p-2 rounded w-full mb-3">
-
-    <button onclick="unlockAdmin()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">
-        Unlock Admin
-    </button>
-
-    <div id="adminPanel" class="hidden mt-6">
-        <input id="carTitle" placeholder="Car Title" class="border p-2 rounded w-full mb-2">
-
-        <input id="startingPrice" type="number" placeholder="Starting Price (EGP)" class="border p-2 rounded w-full mb-2">
-
-        <textarea id="description" placeholder="Description" class="border p-2 rounded w-full mb-2"></textarea>
-
-        <input id="imageUrl" placeholder="Image URL (use Imgur or similar)" class="border p-2 rounded w-full mb-2">
-
-        <button onclick="uploadCar()" class="bg-green-600 text-white px-4 py-2 rounded w-full">
-            Upload Car
+    <!-- DISCREET ADMIN ACCESS -->
+    <div class="text-center mt-10">
+        <button onclick="showAdminLogin()"
+            class="text-sm text-gray-500 hover:text-gray-800 underline">
+            Admin Access
         </button>
     </div>
+
+    <!-- ADMIN LOGIN (HIDDEN INITIALLY) -->
+    <div id="adminLogin" class="hidden bg-white p-6 rounded-xl shadow mt-6 max-w-md mx-auto">
+        <h2 class="text-lg font-semibold mb-4 text-center">Admin Login</h2>
+
+        <input id="adminCode" type="password"
+            placeholder="Enter Admin Code"
+            class="border p-2 rounded w-full mb-3">
+
+        <button onclick="unlockAdmin()"
+            class="bg-blue-600 text-white px-4 py-2 rounded w-full">
+            Unlock Admin
+        </button>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPanel" class="hidden bg-white p-6 rounded-xl shadow mt-8">
+        <h2 class="text-lg font-semibold mb-4">Upload New Car</h2>
+
+        <input id="carTitle" placeholder="Car Title"
+            class="border p-2 rounded w-full mb-2">
+
+        <input id="startingPrice" type="number"
+            placeholder="Starting Price (EGP)"
+            class="border p-2 rounded w-full mb-2">
+
+        <textarea id="description"
+            placeholder="Description"
+            class="border p-2 rounded w-full mb-2"></textarea>
+
+        <input id="imageUrl"
+            placeholder="Image URL"
+            class="border p-2 rounded w-full mb-2">
+
+        <button onclick="uploadCar()"
+            class="bg-green-600 text-white px-4 py-2 rounded w-full">
+            Upload Car
+        </button>
+
+        <!-- ADMIN BID VIEW -->
+        <div class="mt-10">
+            <h2 class="text-lg font-semibold mb-4">Submitted Bids</h2>
+            <div id="adminBids"></div>
+        </div>
+    </div>
+
 </div>
-
-<div id="cars" class="grid md:grid-cols-2 gap-6"></div>
-
-</div>
-
 <script type="module">
 
 /* FIREBASE IMPORTS */
@@ -83,7 +111,11 @@ window.unlockAdmin = function() {
         alert("Incorrect admin code");
     }
 };
-
+    
+window.showAdminLogin = function() {
+    document.getElementById("adminLogin").classList.toggle("hidden");
+};
+    
 /* UPLOAD CAR */
 window.uploadCar = async function() {
 
@@ -114,55 +146,68 @@ window.uploadCar = async function() {
 };
 
 /* PLACE BID */
+import { runTransaction } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
 window.placeBid = async function(id) {
 
     const name = document.getElementById(`name-${id}`).value;
     const emp = document.getElementById(`emp-${id}`).value;
     const bidAmount = Number(document.getElementById(`bid-${id}`).value);
 
-    if (!name || !emp || !bidAmount) {
+    if (!name.trim() || !emp.trim() || isNaN(bidAmount) || bidAmount <= 0) {
         alert("Fill all fields");
         return;
     }
 
     const carRef = doc(db, "cars", id);
-    const snap = await getDoc(carRef);
-    const data = snap.data();
 
-    if (bidAmount <= data.highestBid) {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const snap = await transaction.get(carRef);
+            const data = snap.data();
+
+            if (bidAmount <= data.highestBid) {
+                throw "Bid too low";
+            }
+
+            const updatedBids = [
+                ...data.bids,
+                {
+                    name,
+                    emp,
+                    amount: bidAmount,
+                    time: new Date().toLocaleString()
+                }
+            ];
+
+            transaction.update(carRef, {
+                highestBid: bidAmount,
+                bids: updatedBids
+            });
+        });
+
+        alert("Bid submitted successfully");
+
+    } catch (error) {
         alert("Bid must be higher than current highest bid.");
-        return;
     }
-
-    const updatedBids = [
-        ...data.bids,
-        {
-            name,
-            emp,
-            amount: bidAmount,
-            time: new Date().toLocaleString()
-        }
-    ];
-
-    await updateDoc(carRef, {
-        highestBid: bidAmount,
-        bids: updatedBids
-    });
-
-    alert("Bid submitted successfully");
 };
 
 /* REAL-TIME LISTENER */
 onSnapshot(collection(db, "cars"), (snapshot) => {
 
     const container = document.getElementById("cars");
+    const adminContainer = document.getElementById("adminBids");
+
     container.innerHTML = "";
+    if (adminContainer) adminContainer.innerHTML = "";
 
     snapshot.forEach((docSnap) => {
 
         const car = docSnap.data();
         const id = docSnap.id;
 
+        /* USER VIEW */
         container.innerHTML += `
         <div class="bg-white p-4 rounded-xl shadow">
             <img src="${car.image}" class="w-full h-56 object-cover rounded mb-4">
@@ -188,6 +233,26 @@ onSnapshot(collection(db, "cars"), (snapshot) => {
             </button>
         </div>
         `;
+
+        /* ADMIN VIEW */
+        if (adminContainer && car.bids && car.bids.length > 0) {
+
+            let bidsHtml = car.bids.map(b => `
+                <div class="border-b py-2 text-sm">
+                    <strong>${b.name}</strong> (${b.emp})<br>
+                    EGP ${b.amount.toLocaleString()}<br>
+                    <span class="text-gray-500">${b.time}</span>
+                </div>
+            `).join("");
+
+            adminContainer.innerHTML += `
+                <div class="mb-6 p-4 border rounded">
+                    <h3 class="font-bold mb-2">${car.title}</h3>
+                    ${bidsHtml}
+                </div>
+            `;
+        }
+
     });
 
 });
