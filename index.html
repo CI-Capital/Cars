@@ -1,4 +1,7 @@
 <!DOCTYPE html><html><head>
+<script>
+let isAdmin = false;
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CI Capital Car Auction</title>
@@ -107,7 +110,9 @@ window.unlockAdmin = function() {
     const entered = document.getElementById("adminCode").value;
 
     if (entered === ADMIN_PASSWORD) {
+        isAdmin = true; // ✅ set admin mode
         document.getElementById("adminPanel").classList.remove("hidden");
+        renderCars(); // ✅ force buttons to appear immediately
     } else {
         alert("Incorrect admin code");
     }
@@ -160,7 +165,46 @@ window.deleteCar = async function(id) {
         console.error(error);
     }
 };
-    
+
+    window.editCar = async function(id) {
+
+    const carRef = doc(db, "cars", id);
+    const snap = await getDoc(carRef);
+
+    if (!snap.exists()) {
+        alert("Car not found");
+        return;
+    }
+
+    const car = snap.data();
+
+    const newTitle = prompt("Edit title:", car.title);
+    if (newTitle === null) return;
+
+    const newPrice = prompt("Edit starting price:", car.highestBid);
+    if (newPrice === null) return;
+
+    const newDesc = prompt("Edit description:", car.description);
+    if (newDesc === null) return;
+
+    const newImage = prompt("Edit image URL:", car.image);
+    if (newImage === null) return;
+
+    try {
+        await updateDoc(carRef, {
+            title: newTitle,
+            highestBid: Number(newPrice),
+            description: newDesc,
+            image: newImage
+        });
+
+        alert("Car updated successfully");
+    } catch (error) {
+        alert("Error updating car");
+        console.error(error);
+    }
+};
+
 /* PLACE BID */
 import { runTransaction } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
@@ -210,7 +254,22 @@ window.placeBid = async function(id) {
 };
 
 /* REAL-TIME LISTENER */
+let carsData = [];
+
 onSnapshot(collection(db, "cars"), (snapshot) => {
+
+    carsData = [];
+
+    snapshot.forEach((docSnap) => {
+        carsData.push({
+            id: docSnap.id,
+            ...docSnap.data()
+        });
+    });
+
+    renderCars(); // ✅ re-render every time snapshot updates
+});
+function renderCars() {
 
     const container = document.getElementById("cars");
     const adminContainer = document.getElementById("adminBids");
@@ -218,16 +277,14 @@ onSnapshot(collection(db, "cars"), (snapshot) => {
     container.innerHTML = "";
     if (adminContainer) adminContainer.innerHTML = "";
 
-    snapshot.forEach((docSnap) => {
+    carsData.forEach((car) => {
 
-        const car = docSnap.data();
-        const id = docSnap.id;
+        const id = car.id;
 
-        /* USER VIEW */
         container.innerHTML += `
 <div class="bg-white p-4 rounded-xl shadow relative">
 
-    ${!document.getElementById("adminPanel").classList.contains("hidden") ? `
+    ${isAdmin ? `
         <div class="absolute top-2 right-2 flex gap-2">
             <button onclick="editCar('${id}')"
                 class="bg-yellow-500 text-white px-2 py-1 text-xs rounded">
@@ -249,45 +306,10 @@ onSnapshot(collection(db, "cars"), (snapshot) => {
         Highest Bid: EGP ${car.highestBid.toLocaleString()}
     </p>
 
-    <input id="name-${id}" placeholder="Your Name"
-        class="border p-2 rounded w-full mb-2">
-
-    <input id="emp-${id}" placeholder="Employee ID"
-        class="border p-2 rounded w-full mb-2">
-
-    <input id="bid-${id}" type="number"
-        placeholder="Your Bid (EGP)"
-        class="border p-2 rounded w-full mb-2">
-
-    <button onclick="placeBid('${id}')"
-        class="bg-blue-600 text-white px-4 py-2 rounded w-full">
-        Submit Bid
-    </button>
 </div>
 `;
-
-        /* ADMIN VIEW */
-        if (adminContainer && car.bids && car.bids.length > 0) {
-
-            let bidsHtml = car.bids.map(b => `
-                <div class="border-b py-2 text-sm">
-                    <strong>${b.name}</strong> (${b.emp})<br>
-                    EGP ${b.amount.toLocaleString()}<br>
-                    <span class="text-gray-500">${b.time}</span>
-                </div>
-            `).join("");
-
-            adminContainer.innerHTML += `
-                <div class="mb-6 p-4 border rounded">
-                    <h3 class="font-bold mb-2">${car.title}</h3>
-                    ${bidsHtml}
-                </div>
-            `;
-        }
-
     });
-
-});
+}
 
 </script>
 
