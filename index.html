@@ -197,29 +197,13 @@ window.deleteCar = async function(id) {
         return;
     }
 
-    const confirmReset = confirm(
-        "Do you want to reset bids and highest bid to the new starting price?"
-    );
-
     try {
-
-        if (confirmReset) {
-            await updateDoc(carRef, {
-                title: newTitle,
-                description: newDesc,
-                image: newImage,
-                startingPrice: Number(newStartingPrice),
-                highestBid: Number(newStartingPrice),
-                bids: []
-            });
-        } else {
-            await updateDoc(carRef, {
-                title: newTitle,
-                description: newDesc,
-                image: newImage,
-                startingPrice: Number(newStartingPrice)
-            });
-        }
+        await updateDoc(carRef, {
+            title: newTitle,
+            description: newDesc,
+            image: newImage,
+            startingPrice: Number(newStartingPrice)
+        });
 
         alert("Car updated successfully");
 
@@ -228,6 +212,7 @@ window.deleteCar = async function(id) {
         alert("Error updating car");
     }
 };
+
 
 /* PLACE BID */
 import { runTransaction } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
