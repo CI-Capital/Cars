@@ -136,12 +136,14 @@ window.uploadCar = async function() {
     }
 
     await addDoc(collection(db, "cars"), {
-        title: title,
-        description: desc,
-        image: img,
-        highestBid: Number(price),
-        bids: []
-    });
+    title: title,
+    description: desc,
+    image: img,
+    startingPrice: Number(price),
+    highestBid: Number(price),
+    bids: [],
+    isLive: false
+});
 
     alert("Car uploaded successfully");
 
@@ -181,31 +183,49 @@ window.deleteCar = async function(id) {
     const newTitle = prompt("Edit title:", car.title);
     if (newTitle === null) return;
 
-    const newPrice = prompt("Edit starting price:", car.highestBid);
-if (newPrice === null) return;
-
-if (isNaN(Number(newPrice)) || Number(newPrice) <= 0) {
-    alert("Invalid price");
-    return;
-}
     const newDesc = prompt("Edit description:", car.description);
     if (newDesc === null) return;
 
     const newImage = prompt("Edit image URL:", car.image);
     if (newImage === null) return;
 
+    const newStartingPrice = prompt("Edit starting price:", car.startingPrice);
+    if (newStartingPrice === null) return;
+
+    if (isNaN(Number(newStartingPrice)) || Number(newStartingPrice) <= 0) {
+        alert("Invalid starting price");
+        return;
+    }
+
+    const confirmReset = confirm(
+        "Do you want to reset bids and highest bid to the new starting price?"
+    );
+
     try {
-        await updateDoc(carRef, {
-            title: newTitle,
-            highestBid: Number(newPrice),
-            description: newDesc,
-            image: newImage
-        });
+
+        if (confirmReset) {
+            await updateDoc(carRef, {
+                title: newTitle,
+                description: newDesc,
+                image: newImage,
+                startingPrice: Number(newStartingPrice),
+                highestBid: Number(newStartingPrice),
+                bids: []
+            });
+        } else {
+            await updateDoc(carRef, {
+                title: newTitle,
+                description: newDesc,
+                image: newImage,
+                startingPrice: Number(newStartingPrice)
+            });
+        }
 
         alert("Car updated successfully");
+
     } catch (error) {
-        alert("Error updating car");
         console.error(error);
+        alert("Error updating car");
     }
 };
 
