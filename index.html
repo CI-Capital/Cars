@@ -117,6 +117,41 @@ window.unlockAdmin = function() {
         alert("Incorrect admin code");
     }
 };
+
+window.deleteBid = async function(carId, bidIndex) {
+
+    const confirmDelete = confirm("Delete this bid?");
+    if (!confirmDelete) return;
+
+    const carRef = doc(db, "cars", carId);
+    const snap = await getDoc(carRef);
+
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+
+    // Remove selected bid
+    const bidToDelete = car.bids
+    .sort((a, b) => b.amount - a.amount)[bidIndex];
+
+const updatedBids = data.bids.filter(b =>
+    !(b.name === bidToDelete.name &&
+      b.emp === bidToDelete.emp &&
+      b.amount === bidToDelete.amount &&
+      b.time === bidToDelete.time)
+);
+    // Recalculate highest bid
+    const newHighest = updatedBids.length > 0
+        ? Math.max(...updatedBids.map(b => b.amount))
+        : data.startingPrice;
+
+    await updateDoc(carRef, {
+        bids: updatedBids,
+        highestBid: newHighest
+    });
+
+    alert("Bid deleted");
+};
     
 window.showAdminLogin = function() {
     document.getElementById("adminLogin").classList.toggle("hidden");
@@ -343,27 +378,33 @@ function renderCars() {
 `;
 
         // ✅ ✅ ADMIN BID LIST
-        if (isAdmin && car.bids && car.bids.length > 0) {
+       if (isAdmin && car.bids && car.bids.length > 0) {
 
-            adminContainer.innerHTML += `
+    adminContainer.innerHTML += `
 <div class="border rounded p-4 mb-4 bg-gray-50">
     <h3 class="font-semibold mb-2">${car.title}</h3>
     ${car.bids
+        .slice()
         .sort((a, b) => b.amount - a.amount)
-        .map(bid => `
-        <div class="border-b py-2 text-sm">
+        .map((bid, index) => `
+    <div class="border-b py-2 text-sm flex justify-between items-start">
+        <div>
             <div><strong>Name:</strong> ${bid.name}</div>
             <div><strong>Employee ID:</strong> ${bid.emp}</div>
             <div><strong>Bid:</strong> EGP ${bid.amount.toLocaleString()}</div>
             <div class="text-gray-500">${bid.time}</div>
         </div>
-    `).join("")}
+
+        <button onclick="deleteBid('${car.id}', ${index})"
+            class="bg-red-500 text-white px-2 py-1 text-xs rounded ml-4">
+            Delete
+        </button>
+    </div>
+`)
+        .join("")}
 </div>
 `;
-        }
-    });
 }
-
 </script>
 
 
