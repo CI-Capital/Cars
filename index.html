@@ -223,28 +223,35 @@ window.deleteCar = async function(id) {
 
     const car = snap.data();
 
-    const newTitle = prompt("Edit title:", car.title);
-    if (newTitle === null) return;
+    // Fill admin form with existing data
+    document.getElementById("carTitle").value = car.title;
+    document.getElementById("description").value = car.description;
+    document.getElementById("startingPrice").value = car.startingPrice;
+    document.getElementById("imageUrls").value = car.images.join(", ");
 
-    const newDesc = prompt("Edit description:", car.description);
-    if (newDesc === null) return;
+    // Change upload button behavior to update instead
+    const uploadBtn = document.querySelector("#adminPanel button");
 
-    const newStartingPrice = prompt("Edit starting price:", car.startingPrice);
-    if (newStartingPrice === null) return;
+    uploadBtn.textContent = "Update Car";
+    uploadBtn.onclick = async function() {
 
-    if (isNaN(Number(newStartingPrice))) {
-        alert("Invalid price");
-        return;
-    }
+        await updateDoc(carRef, {
+            title: document.getElementById("carTitle").value,
+            description: document.getElementById("description").value,
+            startingPrice: Number(document.getElementById("startingPrice").value),
+            images: document.getElementById("imageUrls").value
+                .split(",")
+                .map(url => url.trim())
+                .filter(url => url.length > 0)
+        });
 
-    await updateDoc(carRef, {
-        title: newTitle,
-        description: newDesc,
-        startingPrice: Number(newStartingPrice),
-        highestBid: Number(newStartingPrice) // Reset highest bid
-    });
+        alert("Car updated successfully");
 
-    alert("Car updated successfully");
+        uploadBtn.textContent = "Upload Car";
+        uploadBtn.onclick = uploadCar;
+
+        renderCars();
+    };
 };
 
 /* PLACE BID */
