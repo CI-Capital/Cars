@@ -130,17 +130,20 @@ window.deleteBid = async function(carId, bidIndex) {
 
     const data = snap.data();
 
-    // Remove selected bid
-    const bidToDelete = car.bids
-    .sort((a, b) => b.amount - a.amount)[bidIndex];
+    // Sort bids like admin view
+    const sortedBids = data.bids
+        .slice()
+        .sort((a, b) => b.amount - a.amount);
 
-const updatedBids = data.bids.filter(b =>
-    !(b.name === bidToDelete.name &&
-      b.emp === bidToDelete.emp &&
-      b.amount === bidToDelete.amount &&
-      b.time === bidToDelete.time)
-);
-    // Recalculate highest bid
+    const bidToDelete = sortedBids[bidIndex];
+
+    const updatedBids = data.bids.filter(b =>
+        !(b.name === bidToDelete.name &&
+          b.emp === bidToDelete.emp &&
+          b.amount === bidToDelete.amount &&
+          b.time === bidToDelete.time)
+    );
+
     const newHighest = updatedBids.length > 0
         ? Math.max(...updatedBids.map(b => b.amount))
         : data.startingPrice;
