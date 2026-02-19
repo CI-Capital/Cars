@@ -56,9 +56,9 @@ let isAdmin = false;
             placeholder="Description"
             class="border p-2 rounded w-full mb-2"></textarea>
 
-        <input id="imageUrl"
-            placeholder="Image URL"
-            class="border p-2 rounded w-full mb-2">
+        <textarea id="imageUrls"
+    placeholder="Enter image URLs separated by commas"
+    class="border p-2 rounded w-full mb-2"></textarea>
 
         <button onclick="uploadCar()"
             class="bg-green-600 text-white px-4 py-2 rounded w-full">
@@ -166,17 +166,22 @@ window.uploadCar = async function() {
     const title = document.getElementById("carTitle").value;
     const price = document.getElementById("startingPrice").value;
     const desc = document.getElementById("description").value;
-    const img = document.getElementById("imageUrl").value;
+   const imageInput = document.getElementById("imageUrls").value;
 
-    if (!title || !price || !desc || !img) {
+const images = imageInput
+    .split(",")
+    .map(url => url.trim())
+    .filter(url => url.length > 0);
+
+    if (!title || !price || !desc || images.length === 0) {
         alert("Fill all fields");
         return;
     }
 
-    await addDoc(collection(db, "cars"), {
-    title: title,
+ await addDoc(collection(db, "cars"), {
+    title,
     description: desc,
-    image: img,
+    images: images,
     startingPrice: Number(price),
     highestBid: Number(price),
     bids: [],
@@ -185,7 +190,7 @@ window.uploadCar = async function() {
 
     alert("Car uploaded successfully");
 
-    document.getElementById("carTitle").value = "";
+    document.getElementById("imageUrls").value = "";
     document.getElementById("startingPrice").value = "";
     document.getElementById("description").value = "";
     document.getElementById("imageUrl").value = "";
@@ -208,8 +213,6 @@ window.deleteCar = async function(id) {
 
     window.editCar = async function(id) {
 
-    console.log("Edit clicked");
-
     const carRef = doc(db, "cars", id);
     const snap = await getDoc(carRef);
 
@@ -220,39 +223,29 @@ window.deleteCar = async function(id) {
 
     const car = snap.data();
 
-    console.log("Car loaded:", car);
-
     const newTitle = prompt("Edit title:", car.title);
-    console.log("Title entered:", newTitle);
     if (newTitle === null) return;
 
     const newDesc = prompt("Edit description:", car.description);
-    console.log("Description entered:", newDesc);
     if (newDesc === null) return;
 
-    const newImage = prompt("Edit image URL:", car.image);
-    console.log("Image entered:", newImage);
-    if (newImage === null) return;
-
     const newStartingPrice = prompt("Edit starting price:", car.startingPrice);
-    console.log("Price entered:", newStartingPrice);
     if (newStartingPrice === null) return;
 
-    if (isNaN(Number(newStartingPrice)) || Number(newStartingPrice) <= 0) {
-        alert("Invalid starting price");
+    if (isNaN(Number(newStartingPrice))) {
+        alert("Invalid price");
         return;
     }
 
     await updateDoc(carRef, {
         title: newTitle,
         description: newDesc,
-        image: newImage,
-        startingPrice: Number(newStartingPrice)
+        startingPrice: Number(newStartingPrice),
+        highestBid: Number(newStartingPrice) // Reset highest bid
     });
 
     alert("Car updated successfully");
 };
-
 
 /* PLACE BID */
 import { runTransaction } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
@@ -318,6 +311,23 @@ onSnapshot(collection(db, "cars"), (snapshot) => {
 
     renderCars(); // 
 });
+    function startCarousel(id, images) {
+
+    if (!images || images.length <= 1) return;
+
+    let index = 0;
+
+    setInterval(() => {
+
+        index = (index + 1) % images.length;
+
+        const imgElement = document.getElementById(`carousel-${id}`);
+        if (imgElement) {
+            imgElement.src = images[index];
+        }
+
+    }, 3000); // 3 seconds
+}
 function renderCars() {
 
     const container = document.getElementById("cars");
@@ -345,8 +355,12 @@ function renderCars() {
             </button>
         </div>
     ` : ""}
-
-    <img src="${car.image}" class="w-full h-56 object-cover rounded mb-4">
+    
+    <div class="relative w-full h-56 mb-4 overflow-hidden rounded">
+    <img id="carousel-${id}" 
+        src="${car.images && car.images.length ? car.images[0] : ''}" 
+        class="w-full h-56 object-cover rounded">
+</div>
 
     <h3 class="text-xl font-bold">${car.title}</h3>
     <p class="text-gray-600 mb-2">${car.description}</p>
@@ -379,6 +393,8 @@ function renderCars() {
 
 </div>
 `;
+
+startCarousel(id, car.images);
 
         // ✅ ✅ ADMIN BID LIST
        if (isAdmin && car.bids && car.bids.length > 0) {
